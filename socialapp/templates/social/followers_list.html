@@ -1,0 +1,22 @@
+{% extends 'parents/base.html' %}
+{% block content %}
+    <h2>Followers</h2>
+    {% for follower in user.followers.all %}
+        <div style="display: flex">
+            <a href="{% url 'social:profile_visit' follower.id %}" >{{ follower.username }}</a>
+        </div>
+        <hr>
+        {% empty %}
+        there is no follower!
+    {% endfor %}
+    <hr>
+    <h2>Following</h2>
+    {% for following in user.following.all %}
+        <div style="display: flex">
+            <a href="{% url 'social:profile_visit' following.id %}" >{{ following.username }}</a>
+        </div>
+        <hr>
+        {% empty %}
+        there no following!
+    {% endfor %}
+{% endblock %}

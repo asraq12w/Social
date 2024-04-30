@@ -1,0 +1,18 @@
+{% extends 'parents/base.html' %}
+{% block content %}
+    {% if query %}
+        {% for post in posts_results %}
+            <div>
+                <a href="{% url 'social:post_detail' post.id %}">{{ post.caption|truncatewords:6|linebreaks }}</a>
+                <p>Published by {{ post.auther }} in {{ post.create }}</p>
+                {% for tag in post.tags.all %}
+                    <a>{{ tag.name }}</a>{% if not forloop.last %}, {% endif %}
+                {% endfor %}
+                <br>
+                <br>
+            </div>
+        {% empty %}
+            There is no result for this query!
+        {% endfor %}
+    {% endif %}
+{% endblock %}

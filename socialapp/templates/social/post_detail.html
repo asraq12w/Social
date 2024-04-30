@@ -1,0 +1,145 @@
+{% extends 'parents/base.html' %}
+{% load social_share %}
+{% block content %}
+
+    {{ post.caption|linebreaks }}
+    <br>
+    Published by <a href="{% url 'social:profile_visit' post.auther.id %}">{{ post.auther }}</a> at {{ post.create }}
+    <br>
+
+    {% if post.image %}
+        <h2>image: </h2>
+        <img src="{{ post.image.url }}" alt="Post Image" style="width: 200px;">
+    {% endif %}
+    <br>
+    {% for tag in post.tags.all %}
+        <a href="{% url 'social:post_tags' tag.slug %}">{{ tag.name }}</a>{% if not forloop.last %}, {% endif %}
+    {% endfor %}
+    <br>
+    {% if post.auther == request.user %}
+        <hr>
+        <a href="{% url 'social:edit_post' post.id %}">edit post</a>
+        <br>
+        <a href="{% url 'social:delete_post' post.id %}"> delete post</a>
+    {% endif %}
+    <br>
+    <hr>
+    <button class="like-button">
+        {% if request.user in post.likes.all %}
+            unlike
+        {% else %}
+            like
+        {% endif %}
+    </button>
+    <span class="like-count"> {{ post.likes.count }} </span> likes
+    <br>
+    <button class="save-button">
+        {% if request.user in post.saves.all %}
+            unsaved
+        {% else %}
+            save
+        {% endif %}
+    </button>
+    <button class="copy-link">share</button>
+    <br>
+    <hr>
+    comments
+    <br>
+    <textarea placeholder="comment..." class="comment-area"></textarea>
+    <button class="add-comment">add comment</button>
+    <div class="comments">
+    {% for comment in post.comments.all %}
+        author: {{ comment.auther }}
+        <br>
+        {{ comment.text }}
+        <br>
+        <br>
+    {% empty %}
+        <br>
+        no comment
+    {% endfor %}
+    <br>
+    </div>
+    <hr>
+    similar posts
+    {% for post in similar_posts %}
+        <div>
+            <a href="{% url 'social:post_detail' post.id %}">{{ post.caption|truncatewords:6|linebreaks }}</a>
+            <p>Published by {{ post.auther }} in {{ post.create }}</p>
+            {% for tag in post.tags.all %}
+                <a href="{% url 'social:post_tags' tag.slug %}">{{ tag.name }}</a>{% if not forloop.last %}, {% endif %}
+            {% endfor %}
+            <br>
+            <br>
+        </div>
+    {% empty %}
+        There is no post
+    {% endfor %}
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.js"
+            integrity="sha512-+k1pnlgt4F1H8L7t3z95o3/KO+o78INEcXTbnoJQ/F2VqDVhWoaiVml/OEHv9HsVgxUaVW+IbiZPUJQfF/YxZw=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>
+        $(document).ready(function () {
+            $('.like-button').click(function () {
+                let button = $(this);
+
+                $.ajax({
+                    type: "POST",
+                    url: "{% url 'social:like_post' %}",
+                    data: {'post_id': '{{ post.id }}', 'csrfmiddlewaretoken': '{{ csrf_token }}'},
+                    success: function (data) {
+
+                        if (data.liked) {
+                            button.text('unlike');
+                        } else {
+                            button.text('like');
+                        }
+
+                        $('.like-count').text(data.likes_count);
+                    },
+                });
+            });
+
+            $('.save-button').click(function () {
+                let button = $(this);
+
+                $.ajax({
+                    type: 'POST',
+                    data: {'post_id': '{{ post.id }}', 'csrfmiddlewaretoken': '{{ csrf_token }}'},
+                    url: "{% url 'social:save_post' %}",
+                    success: (data) => {
+                        if (data.saved) {
+                            button.text('unsaved');
+                        } else {
+                            button.text('save');
+                        }
+                    }
+                });
+            });
+
+            $(".add-comment").click(function(){
+                let comment = $('.comment-area').val();
+
+                $.ajax({
+                    type: 'POST',
+                    data: {'post_id': '{{ post.id }}', 'comment': comment, 'csrfmiddlewaretoken': '{{ csrf_token }}'},
+                    url: "{% url 'social:add_comment' %}",
+                    success: (data) => {
+                        $('.comments').prepend('author: '+data.auther+"<br/>"+ data.text+"<br/>"+"<br/>");
+                        $('.comment-area').val('');
+                    }
+                });
+            });
+
+            $('.copy-link').click(function(){
+                let href = String(location.href);
+                if(window.navigator.clipboard){
+                    navigator.clipboard.writeText(href);
+                    alert("the link was copied");
+                }
+            });
+        });
+    </script>
+
+{% endblock %}

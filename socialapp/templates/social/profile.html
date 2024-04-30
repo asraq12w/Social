@@ -1,0 +1,112 @@
+{% extends 'parents/base.html' %}
+{% load static %}
+{% block content %}
+    <h1>{{ user.username }}</h1>
+    <p>{{ user.first_name }} {{ user.last_name }}</p>
+    {% if user.photo %}
+        <a href="{{ user.photo.url }}">
+            <img src="{{ user.photo.url }}"
+                 alt="{{ user.username }}'s profile picture" style="width: 100px; border-radius: 100%;">
+        </a>
+    {% else %}
+        <img src="{% static "images/images.png" %}" alt="profile avatar" style="width: 100px;">
+    {% endif %}
+    <a href="{% url 'social:followers_list' user.id %}"><span class="followers">{{ user.followers.count }}Follower</span></a>
+    <a href="{% url 'social:followers_list' user.id %}"><span class="following">{{ user.following.count }}Following</span></a>
+    {% if user != request.user %}
+        <button class="follow-btn">
+            {% if request.user in user.followers.all %}
+                Unfollow
+            {% else %}
+                Follow
+            {% endif %}
+        </button>
+    {% endif %}
+    <h3>job :</h3>
+    <p>{{ user.job }}</p>
+    <h3>bio :</h3>
+    <p>{{ user.bio }}</p>
+
+    <p>-----------------------------------------------------------</p>
+    <h2>posts</h2>
+    <p>-----------------------------------------------------------</p>
+    <div>
+        {% for post in posts %}
+            <div>
+                <a href="{% url 'social:post_detail' post.id %}">{{ post.caption|truncatewords:6|linebreaks }}</a>
+                <p>Published in {{ post.create }}</p>
+                {% for tag in post.tags.all %}
+                    <a href="{% url 'social:post_tags' tag.slug %}">{{ tag.name }}</a>{% if not forloop.last %},
+                {% endif %}
+                {% endfor %}
+                <br>
+                <hr>
+            </div>
+        {% empty %}
+            <p>there is no post</p>
+            <a href="{% url 'social:add_post' %}">Add Post</a>
+        {% endfor %}
+        {% if user == request.user %}
+            <p>-----------------------------------------------------------</p>
+            <h2>saved posts</h2>
+            <p>-----------------------------------------------------------</p>
+            {% for post in saved_posts %}
+                <div>
+                    <a href="{% url 'social:post_detail' post.id %}">{{ post.caption|truncatewords:6|linebreaks }}</a>
+                    <p>Published by <a href="{% url 'social:profile_visit' post.auther.id %}">{{ post.auther }}</a>
+                        in {{ post.create }}</p>
+                    {% for tag in post.tags.all %}
+                        <a href="{% url 'social:post_tags' tag.slug %}">{{ tag.name }}</a>{% if not forloop.last %},
+                    {% endif %}
+                    {% endfor %}
+                    <br>
+                    <hr>
+                </div>
+            {% empty %}
+                <p>no post saves!!!</p>
+            {% endfor %}
+        {% endif %}
+    </div>
+    <div>
+    <p>-----------------------------------------------------------</p>
+    <h2>last user following</h2>
+    <p>-----------------------------------------------------------</p>
+    {% for action in last_following %}
+        <a href="{% url 'social:profile_visit' action.id %}" style="display: block;">{{ action }}</a>
+    {% endfor %}
+    </div>
+    <div>
+    <p>-----------------------------------------------------------</p>
+    <h2>last user followers</h2>
+    <p>-----------------------------------------------------------</p>
+    {% for action in last_followers %}
+        <a href="{% url 'social:profile_visit' action.id %}" style="display: block;">{{ action }}</a>
+    {% endfor %}
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.js"
+            integrity="sha512-+k1pnlgt4F1H8L7t3z95o3/KO+o78INEcXTbnoJQ/F2VqDVhWoaiVml/OEHv9HsVgxUaVW+IbiZPUJQfF/YxZw=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>
+        $(document).ready(() => {
+            $('.follow-btn').click(function () {
+                var button = $(this);
+                $.ajax({
+                    url: '{% url 'social:follow_user' %}',
+                    data: {'user_id': '{{ user.id }}', 'csrfmiddlewaretoken': '{{ csrf_token }}'},
+                    type: 'POST',
+                    success: (data) => {
+                        if (data.follow) {
+                            button.text('Unfollow');
+                        } else {
+                            button.text('Follow');
+                        }
+                        $('.followers').text(data.followers + 'Follower');
+                        $('.following').text(data.following + 'Following');
+                    },
+                });
+            });
+        });
+    </script>
+
+{% endblock %}
